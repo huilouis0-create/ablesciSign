@@ -3,7 +3,7 @@ name: AbleSci Auto Sign
 on:
   workflow_dispatch:
   schedule:
-    - cron: '40 13,23 * * *'  # UTC时间(北京时间为21:40和次日7:40)
+        - cron: '40 23 * * *'  # UTC时间(北京时间次日7:40)
 
 jobs:
   sign:
