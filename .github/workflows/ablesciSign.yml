@@ -23,10 +23,17 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
-      - name: Run AbleSci Sign
+      - name: Run AbleSci Sign (with retry)
         id: sign
+        # 验证码 OCR 偶尔失败或网络抖动时自动重跑，最多 3 次
         run: |
-          python ablesci.py > output.log
+          for i in 1 2 3; do
+            echo "===== 第 $i 次尝试 ====="
+            python ablesci.py > output.log 2>&1 && break
+            cat output.log
+            if [ "$i" == "3" ]; then exit 1; fi
+            sleep 20
+          done
           LOG_CONTENT=$(cat output.log)
           echo "LOG_CONTENT<<EOF" >> $GITHUB_ENV
           echo "$LOG_CONTENT" >> $GITHUB_ENV
