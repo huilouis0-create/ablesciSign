@@ -431,7 +431,9 @@ class AbleSciAuto:
         self.log("")
 
     def run(self):
+        self.login_ok = False
         if self.login():
+            self.login_ok = True
             self.get_user_info()
             self.display_summary(is_before_sign=True)
             if self.sign_in():
@@ -486,15 +488,24 @@ def main():
         global_notifier.log(f"请设置环境变量 {ENV_ACCOUNTS}，格式为：邮箱1:密码1[换行]邮箱2:密码2", "warning")
         if global_notifier.notify_enabled:
             global_notifier.send_notification()
-        return
+        sys.exit(1)
     global_notifier.log(f"找到 {len(accounts)} 个账号", "info")
+    failed = 0
     for i, (email, password) in enumerate(accounts, 1):
         global_notifier.log(f"\n===== 开始处理第 {i}/{len(accounts)} 个账号 =====", "info")
-        AbleSciAuto(email, password, notifier=global_notifier).run()
+        automator = AbleSciAuto(email, password, notifier=global_notifier)
+        automator.run()
+        # 登录失败视为该账号失败（签到自然也没做成）
+        if not automator.login_ok:
+            failed += 1
         global_notifier.log(f"===== 完成第 {i}/{len(accounts)} 个账号处理 =====", "info")
     global_notifier.log("\n===== 所有账号处理完成 =====", "info")
+    if failed:
+        global_notifier.log(f"共 {failed}/{len(accounts)} 个账号处理失败", "error")
     if global_notifier.notify_enabled:
         global_notifier.send_notification()
+    # 有账号失败时以非零退出，让 GitHub Actions 显示失败并触发 workflow 重试
+    sys.exit(1 if failed else 0)
 
 
 if __name__ == "__main__":
